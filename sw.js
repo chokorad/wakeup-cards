@@ -1,10 +1,10 @@
 const CACHE = 'wakeup-cards-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/wakeup-cards/',
+  '/wakeup-cards/index.html',
+  '/wakeup-cards/manifest.json',
+  '/wakeup-cards/icon-192.png',
+  '/wakeup-cards/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
