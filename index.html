@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#7c6fff"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="WakeUp"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>WakeUp Cards</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+:root{
+  --bg:#08080d;--surface:#111118;--surface2:#191924;--border:#252535;
+  --accent:#7c6fff;--accent-dim:rgba(124,111,255,0.15);--accent-glow:rgba(124,111,255,0.3);
+  --success:#00d68f;--danger:#ff4d6d;--warn:#f5a623;
+  --text:#eeeef5;--muted:#6060a0;--muted2:#9090c0;
+  --mono:'Space Mono',monospace;--sans:'Space Grotesk',sans-serif;--r:14px;--r-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans)}
+body{display:flex;flex-direction:column;min-height:100vh}
+#app{flex:1;display:flex;flex-direction:column;max-width:480px;margin:0 auto;width:100%;padding-bottom:72px}
+.header{padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase}
+.screen{display:none;flex:1;flex-direction:column;padding:22px}
+.screen.active{display:flex}
+.day-badge{margin-top:28px;display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 16px;font-family:var(--mono);font-size:11px;color:var(--muted);width:fit-content}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.home-title{margin-top:18px;font-size:34px;font-weight:700;line-height:1.1;letter-spacing:-.02em}
+.home-title em{font-style:normal;color:var(--accent)}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.stat-val{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent)}
+.stat-val.warn{color:var(--warn)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.07em}
+.start-btn{margin-top:24px;padding:17px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 0 32px var(--accent-glow)}
+.start-btn:hover{transform:translateY(-1px)}
+.start-btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
+.home-note{margin-top:10px;text-align:center;font-size:12px;color:var(--muted)}
+.stash-banner{margin-top:14px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.25);border-radius:var(--r-sm);padding:12px 14px;display:none}
+.stash-banner p{font-size:12px;color:var(--warn);line-height:1.5}
+.stash-banner strong{font-weight:700}
+.session-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.round-badge{font-family:var(--mono);font-size:11px;color:var(--warn);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);border-radius:100px;padding:4px 12px}
+.card-counter{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.progress-track{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:6px}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .35s ease}
+.correct-track{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:18px}
+.correct-fill{height:100%;background:var(--success);border-radius:2px;transition:width .35s ease}
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:16px;position:relative;overflow:hidden}
+.q-card::after{content:'';position:absolute;top:-50px;right:-50px;width:140px;height:140px;border-radius:50%;background:var(--accent-dim);pointer-events:none}
+.q-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px}
+.q-text{font-size:20px;font-weight:600;line-height:1.45}
+.options-grid{display:flex;flex-direction:column;gap:10px}
+.opt-btn{width:100%;padding:15px 18px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:all .15s;text-align:left;font-family:var(--sans);color:var(--text);font-size:14px;line-height:1.45}
+.opt-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-dim)}
+.opt-btn:disabled{cursor:default}
+.opt-letter{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:6px;padding:2px 7px;flex-shrink:0;margin-top:1px}
+.opt-btn.correct{border-color:var(--success)!important;background:rgba(0,214,143,.1)!important}
+.opt-btn.correct .opt-letter{background:var(--success);color:#000}
+.opt-btn.wrong{border-color:var(--danger)!important;background:rgba(255,77,109,.1)!important}
+.opt-btn.wrong .opt-letter{background:var(--danger);color:#fff}
+.opt-btn.dim{opacity:.35}
+.feedback-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;min-height:36px}
+.feedback-msg{font-size:13px;font-weight:600}
+.feedback-msg.ok{color:var(--success)}
+.feedback-msg.bad{color:var(--danger)}
+.next-btn{padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;opacity:0;transition:opacity .2s;pointer-events:none}
+.next-btn.show{opacity:1;pointer-events:auto}
+.round-summary{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.rs-icon{font-size:48px;margin-bottom:14px}
+.rs-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.rs-sub{font-size:13px;color:var(--muted2);margin-bottom:24px;line-height:1.6}
+.rs-dots{display:flex;gap:6px;justify-content:center;margin-bottom:24px}
+.rs-dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.rs-dot.done{background:var(--success)}
+.rs-dot.fail{background:var(--danger)}
+.rs-btn{padding:14px 32px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 0 24px var(--accent-glow)}
+.unlock-screen{align-items:center;justify-content:center;text-align:center}
+.unlock-badge{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--success),#00a86b);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:20px;box-shadow:0 0 40px rgba(0,214,143,.4)}
+.unlock-title{font-size:26px;font-weight:700;margin-bottom:6px}
+.unlock-sub{color:var(--muted2);font-size:13px;margin-bottom:28px;line-height:1.5}
+.qr-box{background:#fff;border-radius:16px;padding:14px;display:inline-block;margin-bottom:12px;box-shadow:0 0 56px var(--accent-glow)}
+.qr-box img{display:block;width:210px;height:210px}
+.unlock-col{width:100%;display:flex;flex-direction:column;gap:9px;margin-top:8px}
+.send-anki-btn{padding:15px;border-radius:var(--r);background:var(--success);color:#000;border:none;font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 0 24px rgba(0,214,143,.3)}
+.anki-tip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;text-align:left}
+.anki-tip-ttl{font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.anki-tip p{font-size:12px;color:var(--muted2);line-height:1.6}
+.anki-tip code{font-family:var(--mono);font-size:11px;color:var(--text);background:var(--surface2);padding:1px 4px;border-radius:3px}
+.home-link{padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);color:var(--muted2);font-family:var(--sans);font-size:13px;cursor:pointer}
+.screen-title{font-size:20px;font-weight:700;margin-bottom:20px}
+.mode-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;margin-bottom:18px;gap:3px}
+.mode-btn{flex:1;padding:8px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.mode-btn.active{background:var(--accent);color:#fff}
+textarea{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:11px 13px;font-family:var(--sans);font-size:14px;width:100%;resize:vertical;outline:none;transition:border-color .15s;min-height:68px}
+textarea:focus{border-color:var(--accent)}
+.add-form{display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+.field-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.add-card-btn{padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
+.import-json-box{background:var(--surface2);border:1px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:10px}
+.import-json-box:hover{border-color:var(--accent)}
+.import-json-box .big-icon{font-size:28px;margin-bottom:6px}
+.import-json-box strong{font-size:14px;display:block;margin-bottom:4px}
+.import-json-box p{font-size:12px;color:var(--muted2)}
+#json-file-input{display:none}
+.divider{height:1px;background:var(--border);margin:4px 0 18px}
+.cards-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.card-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-item.stashed{border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.04)}
+.card-item-inner{flex:1}
+.card-item-front{font-size:13px;font-weight:500;margin-bottom:3px}
+.card-item-back{font-size:12px;color:var(--muted2)}
+.card-item-status{font-family:var(--mono);font-size:10px;margin-top:4px}
+.s-new{color:var(--success)}.s-stash{color:var(--warn)}.s-nomcq{color:var(--danger)}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0}
+.del-btn:hover{color:var(--danger)}
+.settings-group{margin-bottom:24px}
+.settings-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.qr-setup{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.qr-setup p{font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:8px}
+.qr-code-display{font-family:var(--mono);font-size:13px;color:var(--accent)}
+.danger-btn{padding:11px;background:rgba(255,77,109,.08);color:var(--danger);border:1px solid rgba(255,77,109,.25);border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;cursor:pointer;width:100%}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(8,8,13,.95);backdrop-filter:blur(14px);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,10px)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px;color:var(--muted);font-size:10px;background:none;border:none;font-family:var(--sans);transition:color .15s}
+.nav-item .ni{font-size:20px}
+.nav-item.active{color:var(--accent)}
+.empty-state{text-align:center;color:var(--muted);font-size:13px;padding:36px 0}
+.empty-state .big{font-size:38px;margin-bottom:10px}
+#toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:var(--success);color:#000;font-family:var(--sans);font-size:12px;font-weight:700;padding:9px 18px;border-radius:100px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:999}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header"><div class="logo">WakeUp Cards</div></div>
+  <div class="screen active" id="screen-home">
+    <div class="day-badge"><div class="dot"></div><span id="today-label">—</span></div>
+    <h1 class="home-title">Good morning.<br><em>Earn your silence.</em></h1>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val warn" id="stat-stash">0</div><div class="stat-lbl">Stashed</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-new">0</div><div class="stat-lbl">New</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Total</div></div>
+    </div>
+    <div class="stash-banner" id="stash-banner"><p>⚠ <strong><span id="stash-count">0</span> stashed cards</strong> from previous sessions will be prioritized this morning.</p></div>
+    <button class="start-btn" id="start-btn" onclick="startSession()">Start session →</button>
+    <p class="home-note" id="home-note" style="display:none"></p>
+  </div>
+  <div class="screen" id="screen-session">
+    <div class="session-header">
+      <div class="round-badge" id="round-badge">Round 1</div>
+      <div class="card-counter" id="card-counter"></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="correct-track"><div class="correct-fill" id="correct-fill" style="width:0%"></div></div>
+    <div class="q-card">
+      <div class="q-label">Question</div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="feedback-row">
+      <div class="feedback-msg" id="feedback-msg"></div>
+      <button class="next-btn" id="next-btn" onclick="nextCard()">Next →</button>
+    </div>
+  </div>
+  <div class="screen" id="screen-summary">
+    <div class="round-summary">
+      <div class="rs-icon">🔁</div>
+      <h2 class="rs-title" id="rs-title"></h2>
+      <p class="rs-sub" id="rs-sub"></p>
+      <div class="rs-dots" id="rs-dots"></div>
+      <button class="rs-btn" id="rs-btn" onclick="startNextRound()">Retry →</button>
+    </div>
+  </div>
+  <div class="screen unlock-screen" id="screen-unlock">
+    <div class="unlock-badge">✓</div>
+    <h2 class="unlock-title">Session complete!</h2>
+    <p class="unlock-sub">Scan to silence your alarm.<br>Then send today's cards to Anki.</p>
+    <div class="qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=WAKEUP-ALARMY-MARIO" alt="QR"/></div>
+    <div class="unlock-col">
+      <button class="send-anki-btn" onclick="sendToAnki()">✓ Send to Anki &amp; clear session</button>
+      <div class="anki-tip">
+        <div class="anki-tip-ttl">How to import</div>
+        <p>Anki → <code>File → Import</code> → select <code>.txt</code> → separator: <code>Tab</code> → pick deck → Import.</p>
+      </div>
+      <button class="home-link" onclick="showScreen('home')">← Back (keep cards for later)</button>
+    </div>
+  </div>
+  <div class="screen" id="screen-cards">
+    <h2 class="screen-title">Cards</h2>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-import" onclick="setMode('import')">Import JSON</button>
+      <button class="mode-btn" id="mode-manual" onclick="setMode('manual')">Add manually</button>
+    </div>
+    <div id="panel-import">
+      <div class="import-json-box" onclick="document.getElementById('json-file-input').click()">
+        <div class="big-icon">📂</div>
+        <strong>Tap to import cards.json</strong>
+        <p>Generated from the Card Generator on your laptop</p>
+      </div>
+      <input type="file" id="json-file-input" accept=".json,application/json" onchange="importJSON(this)"/>
+    </div>
+    <div id="panel-manual" class="add-form" style="display:none">
+      <div><div class="field-lbl">Question</div><textarea id="input-front" placeholder="Question…"></textarea></div>
+      <div><div class="field-lbl">Answer</div><textarea id="input-back" placeholder="Answer…"></textarea></div>
+      <p style="font-size:11px;color:var(--warn);text-align:center">Manual cards have no MCQ distractors</p>
+      <button class="add-card-btn" onclick="addManualCard()">+ Add card</button>
+    </div>
+    <div class="divider"></div>
+    <div class="cards-list" id="cards-list"></div>
+  </div>
+  <div class="screen" id="screen-settings">
+    <h2 class="screen-title">Settings</h2>
+    <div class="settings-group">
+      <div class="settings-lbl">Alarm QR — permanent</div>
+      <div class="qr-setup">
+        <p>Hardcoded forever. Register in Alarmy once via QR/Barcode mode from the unlock screen.</p>
+        <div class="qr-code-display">WAKEUP-ALARMY-MARIO</div>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-lbl">Danger zone</div>
+      <button class="danger-btn" onclick="clearAll()">Clear all cards &amp; stash</button>
+    </div>
+  </div>
+</div>
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="showScreen('home')"><span class="ni">🏠</span>Home</button>
+  <button class="nav-item" id="nav-cards" onclick="showScreen('cards')"><span class="ni">🃏</span>Cards</button>
+  <button class="nav-item" id="nav-settings" onclick="showScreen('settings')"><span class="ni">⚙️</span>Settings</button>
+</nav>
+<div id="toast"></div>
+<script>
+const SESSION_SIZE=10;
+const S={get:k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+let cards=[],sessionCards=[],roundCards=[],sessionCorrect=[],wrongInRound=[],currentIdx=0,roundNum=0,roundHistory=[],answered=false;
+function init(){cards=S.get('wc_cards')||[];refreshHome();renderCards();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');}
+function refreshHome(){
+  const stashed=cards.filter(c=>c.status==='stashed'),fresh=cards.filter(c=>c.status==='new');
+  document.getElementById('stat-stash').textContent=stashed.length;
+  document.getElementById('stat-new').textContent=fresh.length;
+  document.getElementById('stat-total').textContent=cards.length;
+  const now=new Date(),days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('today-label').textContent=days[now.getDay()]+', '+months[now.getMonth()]+' '+now.getDate();
+  const banner=document.getElementById('stash-banner');
+  if(stashed.length>0){banner.style.display='block';document.getElementById('stash-count').textContent=stashed.length;}
+  else banner.style.display='none';
+  const btn=document.getElementById('start-btn'),note=document.getElementById('home-note');
+  const ready=cards.filter(c=>c.options&&c.options.length>=2);
+  if(!cards.length){btn.disabled=true;note.style.display='block';note.textContent='Import cards in the Cards tab ↓';}
+  else if(!ready.length){btn.disabled=true;note.style.display='block';note.textContent='Cards need MCQ options — import from the generator.';}
+  else{btn.disabled=false;note.style.display='none';}
+}
+function startSession(){
+  const ready=cards.filter(c=>c.options&&c.options.length>=2);if(!ready.length)return;
+  const stashed=ready.filter(c=>c.status==='stashed'),fresh=ready.filter(c=>c.status==='new');
+  shuffle(stashed);shuffle(fresh);
+  sessionCards=[...stashed,...fresh].slice(0,SESSION_SIZE);
+  sessionCorrect=[];wrongInRound=[];roundNum=1;roundHistory=[];currentIdx=0;answered=false;
+  roundCards=[...sessionCards];shuffle(roundCards);
+  showScreen('session');loadCard();
+}
+function startNextRound(){roundCards=[...wrongInRound];shuffle(roundCards);wrongInRound=[];roundNum++;currentIdx=0;answered=false;showScreen('session');loadCard();}
+function loadCard(){
+  answered=false;
+  const card=roundCards[currentIdx],total=roundCards.length;
+  document.getElementById('round-badge').textContent='Round '+roundNum;
+  document.getElementById('card-counter').textContent=(currentIdx+1)+' / '+total+' this round';
+  document.getElementById('progress-fill').style.width=(currentIdx/total*100)+'%';
+  document.getElementById('correct-fill').style.width=(sessionCorrect.length/sessionCards.length*100)+'%';
+  document.getElementById('q-text').textContent=card.front;
+  document.getElementById('feedback-msg').textContent='';
+  document.getElementById('feedback-msg').className='feedback-msg';
+  document.getElementById('next-btn').className='next-btn';
+  const opts=[...card.options];shuffle(opts);
+  const letters=['A','B','C','D'];
+  document.getElementById('options-grid').innerHTML=opts.map((o,i)=>`<button class="opt-btn" onclick="pick(this,'${esc(o)}','${esc(card.back)}')" data-val="${escA(o)}"><span class="opt-letter">${letters[i]}</span><span>${escH(o)}</span></button>`).join('');
+}
+function pick(btn,chosen,correct){
+  if(answered)return;answered=true;
+  const ok=chosen===correct;
+  document.querySelectorAll('.opt-btn').forEach(b=>{b.disabled=true;const v=b.getAttribute('data-val');if(v===correct)b.classList.add('correct');else if(b===btn&&!ok)b.classList.add('wrong');else b.classList.add('dim');});
+  const fb=document.getElementById('feedback-msg');fb.textContent=ok?'Correct ✓':'Wrong — see correct answer above';fb.className='feedback-msg '+(ok?'ok':'bad');
+  if(ok)sessionCorrect.push(roundCards[currentIdx]);else wrongInRound.push(roundCards[currentIdx]);
+  document.getElementById('correct-fill').style.width=(sessionCorrect.length/sessionCards.length*100)+'%';
+  document.getElementById('next-btn').className='next-btn show';
+}
+function nextCard(){currentIdx++;if(currentIdx>=roundCards.length)endRound();else loadCard();}
+function endRound(){
+  roundHistory.push({correct:sessionCorrect.length,wrong:wrongInRound.length});
+  if(!wrongInRound.length){showScreen('unlock');return;}
+  showScreen('summary');
+  document.getElementById('rs-title').textContent='Round '+roundNum+': '+sessionCorrect.length+' / '+sessionCards.length+' correct';
+  document.getElementById('rs-sub').textContent=wrongInRound.length+' card'+(wrongInRound.length>1?'s':'')+' still wrong. Need all '+sessionCards.length+' to unlock.';
+  document.getElementById('rs-btn').textContent='Retry '+wrongInRound.length+' →';
+  document.getElementById('rs-dots').innerHTML=roundHistory.map(r=>`<div class="rs-dot ${r.wrong===0?'done':'fail'}"></div>`).join('');
+}
+function sendToAnki(){
+  if(!sessionCorrect.length){showToast('No completed cards');return;}
+  const lines=sessionCorrect.map(c=>c.front.replace(/\t/g,' ')+'\t'+c.back.replace(/\t/g,' '));
+  const blob=new Blob(['#separator:tab\n#html:false\n'+lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a'),d=new Date();
+  a.href=URL.createObjectURL(blob);a.download='anki-'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+  const completedIds=new Set(sessionCorrect.map(c=>c.id));
+  cards=cards.filter(c=>!completedIds.has(c.id));
+  sessionCards.forEach(c=>{if(!completedIds.has(c.id)){const m=cards.find(x=>x.id===c.id);if(m)m.status='stashed';}});
+  S.set('wc_cards',cards);sessionCards=[];sessionCorrect=[];wrongInRound=[];
+  showToast('Exported ✓');setTimeout(()=>showScreen('home'),600);
+}
+function importJSON(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      let imported=Array.isArray(data)?data:(data.cards||[]);
+      const valid=imported.filter(c=>c.front&&c.back&&Array.isArray(c.options)&&c.options.length>=2);
+      if(!valid.length){showToast('No valid MCQ cards found');return;}
+      valid.forEach(c=>{if(!c.id)c.id=uid();c.status=c.status||'new';});
+      cards=[...cards,...valid];S.set('wc_cards',cards);renderCards();refreshHome();showToast('Imported '+valid.length+' cards ✓');
+    }catch(e){showToast('Could not read file');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+function addManualCard(){
+  const front=document.getElementById('input-front').value.trim(),back=document.getElementById('input-back').value.trim();
+  if(!front||!back)return;
+  cards.push({id:uid(),front,back,options:[back],status:'new'});S.set('wc_cards',cards);
+  document.getElementById('input-front').value='';document.getElementById('input-back').value='';
+  renderCards();refreshHome();showToast('Card added');
+}
+function clearAll(){if(!confirm('Clear all cards and stash?'))return;cards=[];S.set('wc_cards',[]);renderCards();refreshHome();showScreen('home');}
+function renderCards(){
+  const el=document.getElementById('cards-list');
+  if(!cards.length){el.innerHTML='<div class="empty-state"><div class="big">🃏</div>No cards yet.</div>';return;}
+  const sorted=[...cards].sort((a,b)=>(a.status==='stashed'&&b.status!=='stashed')?-1:(a.status!=='stashed'&&b.status==='stashed')?1:0);
+  el.innerHTML=sorted.map(c=>{
+    const hasMCQ=c.options&&c.options.length>=2,isStash=c.status==='stashed';
+    return`<div class="card-item${isStash?' stashed':''}"><div class="card-item-inner"><div class="card-item-front">${escH(c.front)}</div><div class="card-item-back">${escH(c.back)}</div><div class="card-item-status ${isStash?'s-stash':hasMCQ?'s-new':'s-nomcq'}">${isStash?'⚠ stashed':'✓ ready'}</div></div><button class="del-btn" onclick="delCard('${c.id}')">✕</button></div>`;
+  }).join('');
+}
+function delCard(id){cards=cards.filter(c=>c.id!==id);S.set('wc_cards',cards);renderCards();refreshHome();}
+function setMode(m){document.getElementById('panel-import').style.display=m==='import'?'block':'none';document.getElementById('panel-manual').style.display=m==='manual'?'flex':'none';document.getElementById('mode-import').className='mode-btn'+(m==='import'?' active':'');document.getElementById('mode-manual').className='mode-btn'+(m==='manual'?' active':'');}
+function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+name).classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const map={home:'nav-home',cards:'nav-cards',settings:'nav-settings',session:'nav-home',summary:'nav-home',unlock:'nav-home'};const el=document.getElementById(map[name]);if(el)el.classList.add('active');if(name==='home')refreshHome();if(name==='cards')renderCards();}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escA(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+init();
+</script>
+</body>
+</html>
